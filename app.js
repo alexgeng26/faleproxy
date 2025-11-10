@@ -70,7 +70,17 @@ app.post('/fetch', async (req, res) => {
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Faleproxy server running at http://localhost:${PORT}`);
-});
+// Function to start the server (exported for testing)
+function startServer(port = PORT) {
+  return app.listen(port, () => {
+    console.log(`Faleproxy server running at http://localhost:${port}`);
+  });
+}
+
+// Export app and startServer for testing
+module.exports = { app, startServer };
+
+// Start the server only if this file is run directly (not when imported)
+if (require.main === module) {
+  startServer();
+}

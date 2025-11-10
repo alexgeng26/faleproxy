@@ -1,70 +1,10 @@
 const request = require('supertest');
 const cheerio = require('cheerio');
-const express = require('express');
-const axios = require('axios');
-const path = require('path');
 const { sampleHtmlWithYale } = require('./test-utils');
 const nock = require('nock');
 
-// Create a test app that mimics app.js but doesn't start a server
-const testApp = express();
-testApp.use(express.json());
-testApp.use(express.urlencoded({ extended: true }));
-testApp.use(express.static(path.join(__dirname, '..', 'public')));
-
-// Mock the /fetch endpoint with the same logic as app.js
-testApp.post('/fetch', async (req, res) => {
-  try {
-    const { url } = req.body;
-    
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-
-    // Fetch the content from the provided URL
-    const response = await axios.get(url);
-    const html = response.data;
-
-    // Use cheerio to parse HTML and selectively replace text content, not URLs
-    const $ = cheerio.load(html);
-    
-    // Helper function to replace Yale with Fale while preserving case
-    function replaceYalePreservingCase(text) {
-      return text
-        .replace(/YALE/g, 'FALE')
-        .replace(/Yale/g, 'Fale')
-        .replace(/yale/g, 'fale');
-    }
-    
-    // Process text nodes in the body
-    $('body *').contents().filter(function() {
-      return this.nodeType === 3; // Text nodes only
-    }).each(function() {
-      // Replace text content but not in URLs or attributes
-      const text = $(this).text();
-      const newText = replaceYalePreservingCase(text);
-      if (text !== newText) {
-        $(this).replaceWith(newText);
-      }
-    });
-    
-    // Process title separately
-    const title = replaceYalePreservingCase($('title').text());
-    $('title').text(title);
-    
-    return res.json({ 
-      success: true, 
-      content: $.html(),
-      title: title,
-      originalUrl: url
-    });
-  } catch (error) {
-    console.error('Error fetching URL:', error.message);
-    return res.status(500).json({ 
-      error: `Failed to fetch content: ${error.message}` 
-    });
-  }
-});
+// Import the actual app (it won't start a server when imported)
+const { app } = require('../app');
 
 describe('Integration Tests', () => {
   beforeAll(() => {
@@ -85,7 +25,7 @@ describe('Integration Tests', () => {
       .reply(200, sampleHtmlWithYale);
     
     // Make a request to our proxy app
-    const response = await request(testApp)
+    const response = await request(app)
       .post('/fetch')
       .send({ url: 'https://example.com/' });
     
@@ -118,7 +58,7 @@ describe('Integration Tests', () => {
       .get('/')
       .replyWithError('getaddrinfo ENOTFOUND not-a-valid-url');
     
-    const response = await request(testApp)
+    const response = await request(app)
       .post('/fetch')
       .send({ url: 'https://not-a-valid-url' });
     
@@ -127,7 +67,7 @@ describe('Integration Tests', () => {
   });
 
   test('Should handle missing URL parameter', async () => {
-    const response = await request(testApp)
+    const response = await request(app)
       .post('/fetch')
       .send({});
     
