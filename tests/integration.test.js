@@ -4,7 +4,7 @@ const { sampleHtmlWithYale } = require('./test-utils');
 const nock = require('nock');
 
 // Import the actual app (it won't start a server when imported)
-const { app } = require('../app');
+const app = require('../app');
 
 describe('Integration Tests', () => {
   beforeAll(() => {

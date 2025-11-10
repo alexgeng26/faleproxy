@@ -77,8 +77,10 @@ function startServer(port = PORT) {
   });
 }
 
-// Export app and startServer for testing
-module.exports = { app, startServer };
+// Export app as default (required by Vercel)
+// Also export startServer as a property for testing
+module.exports = app;
+module.exports.startServer = startServer;
 
 // Start the server only if this file is run directly (not when imported)
 if (require.main === module) {

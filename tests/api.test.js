@@ -3,7 +3,8 @@ const nock = require('nock');
 const { sampleHtmlWithYale } = require('./test-utils');
 
 // Import the actual app (it won't start a server when imported)
-const { app, startServer } = require('../app');
+const app = require('../app');
+const startServer = app.startServer;
 
 describe('API Endpoints', () => {
   beforeAll(() => {
